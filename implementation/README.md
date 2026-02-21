@@ -48,8 +48,32 @@ $ anvil
 ### Deploy
 
 ```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+$ source .env
+$ forge script script/Counter.s.sol:CounterScript --rpc-url lisk_testnet --broadcast --private-key $PRIVATE_KEY
 ```
+
+## Lisk Sepolia Deployment
+
+- Network: `Lisk Sepolia`
+- RPC URL: `https://rpc.sepolia-api.lisk.com`
+- Chain ID: `4202`
+- Explorer: `https://sepolia-blockscout.lisk.com`
+
+Required `.env` values:
+
+```shell
+DEPLOYER_ADDRESS=<your_wallet_address>
+PRIVATE_KEY=<your_private_key>
+LISK_TESTNET_RPC_URL=https://rpc.sepolia-api.lisk.com
+LISK_TESTNET_CHAIN_ID=4202
+```
+
+Live deployment (2026-02-21):
+
+- Contract: `0x7c38ec2d5516384ba6f3705bb158095fdb383b96`
+- Contract URL: `https://sepolia-blockscout.lisk.com/address/0x7c38ec2d5516384ba6f3705bb158095fdb383b96`
+- Tx: `0xe81638275dcb3b71caaa18ce0ca1fd058c603f4925f4fe26903c1c595561fc68`
+- Tx URL: `https://sepolia-blockscout.lisk.com/tx/0xe81638275dcb3b71caaa18ce0ca1fd058c603f4925f4fe26903c1c595561fc68`
 
 ### Cast
 

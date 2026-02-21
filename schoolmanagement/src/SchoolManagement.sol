@@ -27,6 +27,8 @@ contract SchoolManagement {
     mapping(address => Staff) public staff;
     address[] public studentList;
     address[] public staffList;
+    mapping(address => bool) public isStudentRegistered;
+    mapping(address => bool) public isStaffRegistered;
     address public schoolAdmin;
 
     event StudentRegistered(address indexed student, string name, uint256 gradeLevel, uint256 fee);
@@ -48,51 +50,60 @@ contract SchoolManagement {
         gradeFees[400] = 2.5 ether;
     }
 
-    // Register a student
+    // Register a student; fee is paid separately via payStudentFee
     function registerStudent(address studentAddr, string memory name, uint256 gradeLevel) external onlyAdmin {
         require(studentAddr != address(0), "Invalid address");
         require(gradeLevel >= 100 && gradeLevel <= 400, "Invalid grade level");
         require(gradeLevel % 100 == 0, "Grade level must be 100, 200, 300, or 400");
+        require(!isStudentRegistered[studentAddr], "Student already registered");
+
+        uint256 requiredFee = gradeFees[gradeLevel];
 
         students[studentAddr] = Student(studentAddr, name, gradeLevel, false, 0);
         studentList.push(studentAddr);
+        isStudentRegistered[studentAddr] = true;
 
-        emit StudentRegistered(studentAddr, name, gradeLevel, gradeFees[gradeLevel]);
+        emit StudentRegistered(studentAddr, name, gradeLevel, requiredFee);
     }
 
-    // Register staff
+    // Register staff; salary is paid separately via payStaffSalary
     function registerStaff(address staffAddr, string memory name, uint256 salary) external onlyAdmin {
         require(staffAddr != address(0), "Invalid address");
         require(salary > 0, "Salary must be > 0");
+        require(!isStaffRegistered[staffAddr], "Staff already registered");
 
         staff[staffAddr] = Staff(staffAddr, name, salary, false, 0);
         staffList.push(staffAddr);
+        isStaffRegistered[staffAddr] = true;
 
         emit StaffRegistered(staffAddr, name, salary);
     }
 
-    // Pay student fees
-    function payStudentFee(address studentAddr) external payable {
-        require(students[studentAddr].wallet != address(0), "Student not found");
+    // Pay student fee and update payment status with timestamp
+    function payStudentFee(address studentAddr) external payable onlyAdmin {
+        require(isStudentRegistered[studentAddr], "Student not found");
         require(!students[studentAddr].feePaid, "Fee already paid");
 
         uint256 requiredFee = gradeFees[students[studentAddr].gradeLevel];
-        require(msg.value >= requiredFee, "Insufficient payment");
+        require(msg.value == requiredFee, "Exact payment required");
 
         students[studentAddr].feePaid = true;
         students[studentAddr].feePaymentTime = block.timestamp;
 
-        emit FeePaid(studentAddr, msg.value, block.timestamp);
+        emit FeePaid(studentAddr, requiredFee, block.timestamp);
     }
 
-    // Pay staff salary
-    function payStaffSalary(address staffAddr) external payable {
-        require(staff[staffAddr].wallet != address(0), "Staff not found");
+    // Pay staff salary and update payment status with timestamp
+    function payStaffSalary(address staffAddr) external payable onlyAdmin {
+        require(isStaffRegistered[staffAddr], "Staff not found");
         require(!staff[staffAddr].salaryPaid, "Salary already paid");
-        require(msg.value >= staff[staffAddr].salary, "Insufficient payment");
+        require(msg.value == staff[staffAddr].salary, "Exact payment required");
 
         staff[staffAddr].salaryPaid = true;
         staff[staffAddr].salaryPaymentTime = block.timestamp;
+
+        (bool success, ) = payable(staffAddr).call{value: msg.value}("");
+        require(success, "Salary transfer failed");
 
         emit SalaryPaid(staffAddr, msg.value, block.timestamp);
     }
